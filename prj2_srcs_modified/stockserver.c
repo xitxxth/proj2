@@ -33,6 +33,9 @@ struct item{
 struct item stock_tree[MAX_STOCK]; //manage heap as array
 /*user defined function*/
 void stock_tree_init(void);//initialize stock list
+void show_stock(void);//show stock list
+void buy_stock(int, int);//buy stock
+void sell_stock(int, int);//sell stock
 
 int main(int argc, char **argv)
 {
@@ -128,6 +131,7 @@ void check_clients(pool *p)
 {
     int i, connfd, n;
     char buf[MAXLINE]; 
+	char cmdline[MAXLINE];
     rio_t rio;
 
     for (i = 0; (i <= p->maxi) && (p->nready > 0); i++) {
@@ -140,8 +144,13 @@ void check_clients(pool *p)
 	    if ((n = Rio_readlineb(&rio, buf, MAXLINE)) != 0) {
 		byte_cnt += n; //line:conc:echoservers:beginecho
 		printf("Server received %d (%d total) bytes on fd %d\n", n, byte_cnt, connfd);
-
 		Rio_writen(connfd, buf, n); //line:conc:echoservers:endecho
+		strcpy(cmdline, buf);
+		if(strcmp(cmdline, "show")==0)	show_stock();
+		else if(strncmp(cmdline, "buy", 3)==0){}
+		else if(strncmp(cmdline, "sell", 3)==0){}
+		else	printf("WRONG REQUEST\n");
+		
 	    }
 
 	    /* EOF detected, remove descriptor from pool */
@@ -154,6 +163,7 @@ void check_clients(pool *p)
     }
 }
 /* $end check_clients */
+/*user defined functions*/
 void stock_tree_init(void)
 {
 	for(int i=0; i<MAX_STOCK; i++){
@@ -163,5 +173,21 @@ void stock_tree_init(void)
 		stock_tree[i].price = -1;
 		stock_tree[i].readcnt = -1;
 	}
+}
+
+void show_stock(void)
+{
+	for(int i=0; stock_tree[i].ID>0; i++)
+		printf("%d %d %d\n", stock_tree[i].ID, stock_tree[i].left_stock, stock_tree[i].price);
+}
+
+void buy_stock(int id, int quant)
+{
 
 }
+
+void sell_stock(int id, int quant)
+{
+
+}
+
