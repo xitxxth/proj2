@@ -4,6 +4,7 @@
 /* $begin echoserversmain */
 #include "csapp.h"
 /*user defined macro*/
+#include <stdlib.h>
 #define MAX_STOCK 100
 typedef struct { /* Represents a pool of connected descriptors */ //line:conc:echoservers:beginpool
     int maxfd;        /* Largest descriptor in read_set */   
@@ -178,15 +179,19 @@ void stock_tree_init(void)
 void show_stock(int connfd)
 {
 	char cat_list[MAXLINE];
+	char tmp[100];
 	for(int i=0; stock_tree[i].ID>0; i++){
-		strcat(cat_list, itoa(stock_tree[i].ID));
-		strcat(cat_list, ' ');
-		strcat(cat_list, itoa(stock_tree[i].left_stock));
-		strcat(cat_list, ' ');
-		strcat(cat_list, itoa(stock_tree[i].price));
-		strcat(cat_list, '\n');
+		itoa(stock_tree[i].ID, tmp, 10);
+		strcat(cat_list, tmp);
+		strcat(cat_list, " ");
+		itoa(stock_tree[i].left_stock, tmp, 10);
+		strcat(cat_list, tmp);
+		strcat(cat_list, " ");
+		itoa(stock_tree[i].price, tmp, 10);
+		strcat(cat_list, tmp);
+		strcat(cat_list, " ");
 	}
-	strcat(cat_list, '\0');
+	strcat(cat_list, "\0");
 	Rio_writen(connfd, cat_list, sizeof(cat_list));
 }
 
