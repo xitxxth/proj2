@@ -6,6 +6,7 @@
 /*user defined macro*/
 #include <stdlib.h>
 #define MAX_STOCK 100
+#define MAX_CHARACTERS 100
 typedef struct { /* Represents a pool of connected descriptors */ //line:conc:echoservers:beginpool
     int maxfd;        /* Largest descriptor in read_set */   
     fd_set read_set;  /* Set of all active descriptors */
@@ -37,6 +38,7 @@ void stock_tree_init(void);//initialize stock list
 void show_stock(int);//show stock list
 void buy_stock(int, int);//buy stock
 void sell_stock(int, int);//sell stock
+void parse_cmd(char *);//parse command line
 
 int main(int argc, char **argv)
 {
@@ -148,8 +150,14 @@ void check_clients(pool *p)
 		strcpy(cmdline, buf);
 		Rio_writen(connfd, buf, n); //line:conc:echoservers:endecho
 		if(strncmp(cmdline, "show", 4)==0)	show_stock(connfd);
-		else if(strncmp(cmdline, "buy", 3)==0){}
-		else if(strncmp(cmdline, "sell", 3)==0){}
+		else if(strncmp(cmdline, "buy", 3)==0){
+			parse_cmd(cmdline);
+
+		}
+		else if(strncmp(cmdline, "sell", 3)==0){
+			parse_cmd(cmdline);
+		}
+		else if(strncmp(cmdline, "exit", 4)==0){ }
 		else	printf("WRONG REQUEST\n");
 		
 	    }
@@ -179,7 +187,7 @@ void stock_tree_init(void)
 void show_stock(int connfd)
 {
 	char cat_list[MAXLINE];
-	char tmp[100];
+	char tmp[MAX_CHARACTERS];
 	for(int i=0; stock_tree[i].ID>0; i++){
 		sprintf(tmp, "%d %d %d\n", stock_tree[i].ID, stock_tree[i].left_stock, stock_tree[i].price);
 		strcat(cat_list, tmp);
@@ -195,5 +203,18 @@ void buy_stock(int id, int quant)
 void sell_stock(int id, int quant)
 {
 
+}
+
+void parse_cmd(char* cmd)
+{
+	int parsed_id, parsed_quant, i;
+	int empty_space[3];
+	for(i=0; cmd[i]!=' '; i++){ }
+	empty_space[0] = i;
+	for(++i; cmd[i]!=' '; i++){ }
+	empty_space[1] = i;
+	for(++i; cmd[i]!=' '; i++){ }
+	empty_space[2] = i;
+	printf("%d %d %d", empty_space[0], empty_space[1], empty_space[2]);
 }
 
