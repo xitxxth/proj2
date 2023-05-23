@@ -147,7 +147,7 @@ void check_clients(pool *p)
 		printf("Server received %d (%d total) bytes on fd %d\n", n, byte_cnt, connfd);
 		strcpy(cmdline, buf);
 		Rio_writen(connfd, buf, n); //line:conc:echoservers:endecho
-		if(strcmp(cmdline, "show")==0)	show_stock(connfd);
+		if(strncmp(cmdline, "show", 4)==0)	show_stock(connfd);
 		else if(strncmp(cmdline, "buy", 3)==0){}
 		else if(strncmp(cmdline, "sell", 3)==0){}
 		else	printf("WRONG REQUEST\n");
@@ -182,9 +182,9 @@ void show_stock(int connfd)
 	char tmp[100];
 	for(int i=0; stock_tree[i].ID>0; i++){
 		sprintf(tmp, "%d %d %d\n", stock_tree[i].ID, stock_tree[i].left_stock, stock_tree[i].price);
-		Rio_writen(connfd, tmp, sizeof(tmp));
+		strcat(cat_list, tmp);
 	}
-	//Rio_writen(connfd, cat_list, sizeof(cat_list));
+	Rio_writen(connfd, cat_list, sizeof(cat_list));
 }
 
 void buy_stock(int id, int quant)
