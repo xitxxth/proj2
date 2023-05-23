@@ -148,7 +148,7 @@ void check_clients(pool *p)
 		byte_cnt += n; //line:conc:echoservers:beginecho
 		printf("Server received %d (%d total) bytes on fd %d\n", n, byte_cnt, connfd);
 		strcpy(cmdline, buf);
-		Rio_writen(connfd, buf, n); //line:conc:echoservers:endecho
+		//Rio_writen(connfd, buf, n); //line:conc:echoservers:endecho
 		if(strncmp(cmdline, "show", 4)==0)	show_stock(connfd);
 		else if(strncmp(cmdline, "buy", 3)==0){
 			parse_cmd(cmdline);
@@ -213,8 +213,8 @@ void parse_cmd(char* cmd)
 	empty_space[0] = i;
 	for(++i; cmd[i]!=' '; i++){ }
 	empty_space[1] = i;
-	for(++i; cmd[i]!=' '; i++){ }
+	for(++i; cmd[i]; i++){ }
 	empty_space[2] = i;
-	printf("%d %d %d", empty_space[0], empty_space[1], empty_space[2]);
+	printf("ans: %d %d %d\n", empty_space[0], empty_space[1], empty_space[2]);
 }
 
