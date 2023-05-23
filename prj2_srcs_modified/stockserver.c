@@ -33,7 +33,7 @@ struct item{
 struct item stock_tree[MAX_STOCK]; //manage heap as array
 /*user defined function*/
 void stock_tree_init(void);//initialize stock list
-void show_stock(void);//show stock list
+void show_stock(int);//show stock list
 void buy_stock(int, int);//buy stock
 void sell_stock(int, int);//sell stock
 
@@ -146,7 +146,7 @@ void check_clients(pool *p)
 		printf("Server received %d (%d total) bytes on fd %d\n", n, byte_cnt, connfd);
 		Rio_writen(connfd, buf, n); //line:conc:echoservers:endecho
 		strcpy(cmdline, buf);
-		if(strcmp(cmdline, "show")==0)	show_stock();
+		if(strcmp(cmdline, "show")==0)	show_stock(connfd);
 		else if(strncmp(cmdline, "buy", 3)==0){}
 		else if(strncmp(cmdline, "sell", 3)==0){}
 		else	printf("WRONG REQUEST\n");
@@ -175,10 +175,19 @@ void stock_tree_init(void)
 	}
 }
 
-void show_stock(void)
+void show_stock(int connfd)
 {
-	for(int i=0; stock_tree[i].ID>0; i++)
-		printf("%d %d %d\n", stock_tree[i].ID, stock_tree[i].left_stock, stock_tree[i].price);
+	char cat_list[MAXLINE];
+	for(int i=0; stock_tree[i].ID>0; i++){
+		strcat(cat_list, itoa(stock_tree[i].ID));
+		strcat(cat_list, ' ');
+		strcat(cat_list, itoa(stock_tree[i].left_stock));
+		strcat(cat_list, ' ');
+		strcat(cat_list, itoa(stock_tree[i].price));
+		strcat(cat_list, '\n');
+	}
+	strcat(cat_list, '\0');
+	Rio_writen(connfd, cat_list, sizeof(cat_list));
 }
 
 void buy_stock(int id, int quant)
