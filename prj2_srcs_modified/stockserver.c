@@ -181,15 +181,8 @@ void show_stock(int connfd)
 	char cat_list[MAXLINE];
 	char tmp[100];
 	for(int i=0; stock_tree[i].ID>0; i++){
-		itoa(stock_tree[i].ID, tmp, 10);
+		sprintf(tmp, "%d %d %d\n", stock_tree[i].ID, stock_tree[i].left_stock, stock_tree[i].price);
 		strcat(cat_list, tmp);
-		strcat(cat_list, " ");
-		itoa(stock_tree[i].left_stock, tmp, 10);
-		strcat(cat_list, tmp);
-		strcat(cat_list, " ");
-		itoa(stock_tree[i].price, tmp, 10);
-		strcat(cat_list, tmp);
-		strcat(cat_list, " ");
 	}
 	strcat(cat_list, "\0");
 	Rio_writen(connfd, cat_list, sizeof(cat_list));
