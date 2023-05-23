@@ -52,14 +52,10 @@ int main(int argc, char **argv)
 		i++;//update index
 	}//
 	fclose(fp);//close file pointer
-	for(int i=0; stock_tree[i].ID>0; i++){
-		printf("%d %d %d\n", stock_tree[i].ID, stock_tree[i].left_stock, stock_tree[i].price);
-	}
     int listenfd, connfd;
     socklen_t clientlen;
     struct sockaddr_storage clientaddr;
     static pool pool;
-	for(int )
     if (argc != 2) {
 	fprintf(stderr, "usage: %s <port>\n", argv[0]);
 	exit(0);
@@ -163,7 +159,7 @@ void stock_tree_init(void)
 	for(int i=0; i<MAX_STOCK; i++){
 		stock_tree[i].ID = -1;
 		stock_tree[i].left_stock = -1;
-		stock_tree[i].mutex = -1;
+		//stock_tree[i].mutex = -1;
 		stock_tree[i].price = -1;
 		stock_tree[i].readcnt = -1;
 	}
