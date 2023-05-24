@@ -40,6 +40,7 @@ void show_stock(int);//show stock list
 void buy_stock(int, int, int);//buy stock
 void sell_stock(int, int, int);//sell stock
 void parse_cmd(char *, int*);//parse command line
+void exit_client(void);
 
 int main(int argc, char **argv)
 {
@@ -163,12 +164,15 @@ void check_clients(pool *p)
 			parse_cmd(cmdline, parsed_ans);
 			sell_stock(parsed_ans[0], parsed_ans[1], connfd);
 		}
-		else if(strncmp(cmdline, "exit", 4)==0){ }
-		else	printf("WRONG REQUEST\n");		
+		else if(strncmp(cmdline, "exit", 4)==0){
+			Close(connfd); //line:conc:echoservers:closeconnfd
+			FD_CLR(connfd, &p->read_set); //line:conc:echoservers:beginremove
+			p->clientfd[i] = -1;          //line:conc:echoservers:endremove
+		}
 	    }
 
 	    /* EOF detected, remove descriptor from pool */
-	    else { 
+	    else {
 		Close(connfd); //line:conc:echoservers:closeconnfd
 		FD_CLR(connfd, &p->read_set); //line:conc:echoservers:beginremove
 		p->clientfd[i] = -1;          //line:conc:echoservers:endremove
@@ -249,4 +253,9 @@ void SIGINT_HANDLER(int s)
 	for(int i=0; stock_tree[i].ID>0; i++)	fprintf(fp, "%d %d %d\n", stock_tree[i].ID, stock_tree[i].left_stock, stock_tree[i].price);
 	fclose(fp);
     errno = olderrno;
+}
+
+void exit_client(void)
+{
+
 }
