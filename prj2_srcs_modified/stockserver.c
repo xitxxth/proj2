@@ -263,26 +263,19 @@ void SIGINT_HANDLER(int s)
 
 void insert_heap(void)
 {
-	printf("here1?\n");
 	int tmp_id, tmp_price, tmp_left;// temporary variable for input
-	printf("here2\n");
 	while(fscanf(fp, "%d %d %d", &tmp_id, &tmp_left, &tmp_price)!=EOF){
-		printf("here3?\n");
 		for(int j=1; j<128;){
-			printf("here4?\n");
 			if(stock_tree[j].ID == -1){
-				printf("[%d]: %d inserted\n", j, tmp_id);
 				stock_tree[j].ID = tmp_id;
 				stock_tree[j].left_stock = tmp_left;
 				stock_tree[j].price = tmp_price;
 				break;
 			}
 			else if(tmp_id < stock_tree[j].ID){
-				printf("[j]: *2\n");
 				j = j*2;
 			}
 			else if(tmp_id > stock_tree[j].ID){
-				printf("[j]: *2+1\n");
 				j = j*2+1;
 			}
 		}
