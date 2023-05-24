@@ -84,6 +84,10 @@ int main(int argc, char **argv)
 	/* Echo a text line from each ready connected descriptor */ 
 	check_clients(&pool); //line:conc:echoservers:checkclients
     }
+
+	fp = fopen("stock.txt", "w");
+	for(int i=0; stock_tree[i].ID>0; i++)	fprintf(fp, "%d %d %d\n", stock_tree[i].ID, stock_tree[i].left_stock, stock_tree[i].price);
+	fclose(fp);
 }
 /* $end echoserversmain */
 
@@ -161,8 +165,7 @@ void check_clients(pool *p)
 			sell_stock(parsed_ans[0], parsed_ans[1], connfd);
 		}
 		else if(strncmp(cmdline, "exit", 4)==0){ }
-		else	printf("WRONG REQUEST\n");
-		
+		else	printf("WRONG REQUEST\n");		
 	    }
 
 	    /* EOF detected, remove descriptor from pool */
