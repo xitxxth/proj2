@@ -266,7 +266,7 @@ void insert_heap(void)
 	int tmp_id, tmp_price, tmp_left;// temporary variable for input
 	int i=0;
 	while(fscanf(fp, "%d %d %d", &tmp_id, &tmp_left, &tmp_price)!=EOF){
-		for(int j=0; ;){
+		for(int j=1; j<128;){
 			if(tmp_id < stock_tree[j].ID){
 				j = j*2;
 			}
