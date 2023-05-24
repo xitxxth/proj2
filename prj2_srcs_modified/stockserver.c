@@ -5,7 +5,7 @@
 #include "csapp.h"
 /*user defined macro*/
 #include <stdlib.h>
-#define MAX_STOCK 100
+#define MAX_STOCK 129
 #define MAX_CHARACTERS 100
 typedef struct { /* Represents a pool of connected descriptors */ //line:conc:echoservers:beginpool
     int maxfd;        /* Largest descriptor in read_set */   
@@ -40,7 +40,8 @@ void show_stock(int);//show stock list
 void buy_stock(int, int, int);//buy stock
 void sell_stock(int, int, int);//sell stock
 void parse_cmd(char *, int*);//parse command line
-void exit_client(void);
+void insert_heap(void);
+void search_heap(int);
 
 int main(int argc, char **argv)
 {
@@ -51,15 +52,19 @@ int main(int argc, char **argv)
 		printf("FILE OPEN ERROR\n");
 		exit(0);
 	}
-	int tmp_id, tmp_price, tmp_left;// temporary variable for input
-	int i=0;
-	while(fscanf(fp, "%d %d %d", &tmp_id, &tmp_left, &tmp_price)!=EOF){
-		stock_tree[i].ID = tmp_id;
-		stock_tree[i].left_stock = tmp_left;
-		stock_tree[i].price = tmp_price;
-		//update stock list
-		i++;//update index
-	}//
+	// int tmp_id, tmp_price, tmp_left;// temporary variable for input
+	// int i=0;
+	// while(fscanf(fp, "%d %d %d", &tmp_id, &tmp_left, &tmp_price)!=EOF){
+	// 	stock_tree[i].ID = tmp_id;
+	// 	stock_tree[i].left_stock = tmp_left;
+	// 	stock_tree[i].price = tmp_price;
+	// 	//update stock list
+	// 	i++;//update index
+	// }//
+	insert_heap();
+	for(int i=0; stock_tree[i].ID>0; i++){
+		printf("[%d]: %d\n", i, stock_tree[i].ID);
+	}
 	fclose(fp);//close file pointer
     int listenfd, connfd;
     socklen_t clientlen;
@@ -165,14 +170,15 @@ void check_clients(pool *p)
 			sell_stock(parsed_ans[0], parsed_ans[1], connfd);
 		}
 		else if(strncmp(cmdline, "exit", 4)==0){
+			printf("client dead\n");
 			Close(connfd); //line:conc:echoservers:closeconnfd
 			FD_CLR(connfd, &p->read_set); //line:conc:echoservers:beginremove
 			p->clientfd[i] = -1;          //line:conc:echoservers:endremove
 		}
 	    }
-
 	    /* EOF detected, remove descriptor from pool */
 	    else {
+		printf("client dead\n");
 		Close(connfd); //line:conc:echoservers:closeconnfd
 		FD_CLR(connfd, &p->read_set); //line:conc:echoservers:beginremove
 		p->clientfd[i] = -1;          //line:conc:echoservers:endremove
@@ -255,7 +261,29 @@ void SIGINT_HANDLER(int s)
     errno = olderrno;
 }
 
-void exit_client(void)
+void insert_heap(void)
+{
+	int tmp_id, tmp_price, tmp_left;// temporary variable for input
+	int i=0;
+	while(fscanf(fp, "%d %d %d", &tmp_id, &tmp_left, &tmp_price)!=EOF){
+		for(int j=0; ;){
+			if(tmp_id < stock_tree[j].ID){
+				j = j*2;
+			}
+			else if(tmp_id > stock_tree[j].ID){
+				j = j*2+1;
+			}
+			else if(stock_tree[j].ID == -1){
+				stock_tree[j].ID = tmp_id;
+				stock_tree[j].left_stock = tmp_left;
+				stock_tree[j].price = tmp_price;
+				break;
+			}
+		}
+	}//
+}
+
+void search_heap(int)
 {
 
 }
