@@ -38,7 +38,7 @@ void stock_tree_init(void);//initialize stock list
 void show_stock(int);//show stock list
 void buy_stock(int, int);//buy stock
 void sell_stock(int, int);//sell stock
-void parse_cmd(char *);//parse command line
+void parse_cmd(char *, int*);//parse command line
 
 int main(int argc, char **argv)
 {
@@ -136,6 +136,8 @@ void check_clients(pool *p)
     char buf[MAXLINE]; 
 	char cmdline[MAXLINE];
     rio_t rio;
+	/*user defined data structure*/
+	int parsed_ans[2];
 
     for (i = 0; (i <= p->maxi) && (p->nready > 0); i++) {
 	connfd = p->clientfd[i];
@@ -152,7 +154,7 @@ void check_clients(pool *p)
 		if(strncmp(cmdline, "show", 4)==0)	show_stock(connfd);
 		else if(strncmp(cmdline, "buy", 3)==0){
 			parse_cmd(cmdline);
-
+			printf("id is %d\nquant is %d\n", parsed_ans[0], parsed_ans[1]);
 		}
 		else if(strncmp(cmdline, "sell", 3)==0){
 			parse_cmd(cmdline);
@@ -205,16 +207,21 @@ void sell_stock(int id, int quant)
 
 }
 
-void parse_cmd(char* cmd)
+void parse_cmd(char* cmd, int * parsed_ans)
 {
-	int parsed_id, parsed_quant, i;
+	int parsed_id, parsed_quant, i, j, k;
 	int empty_space[3];
+	char string_id[10], string_quant[10];
 	for(i=0; cmd[i]!=' '; i++){ }
 	empty_space[0] = i;
-	for(++i; cmd[i]!=' '; i++){ }
-	empty_space[1] = i;
-	for(++i; cmd[i]; i++){ }
-	empty_space[2] = i;
-	printf("ans: %d %d %d\n", empty_space[0], empty_space[1], empty_space[2]);
+	for(j=i+1; cmd[j]!=' '; j++){ }
+	empty_space[1] = j;
+	strncpy(string_id, cmd + i + 1, j-i-1);
+	for(k=j+1; cmd[k]; k++){ }
+	empty_space[2] = k;
+	strncpy(string_quant, cmd + j + 1, k-j-1);
+	parsed_ans[0] = atoi(string_id);
+	parsed_ans[1] = atoi(string_quant);
+	return 0;
 }
 
