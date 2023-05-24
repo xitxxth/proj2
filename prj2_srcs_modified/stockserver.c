@@ -36,8 +36,8 @@ struct item stock_tree[MAX_STOCK]; //manage heap as array
 /*user defined function*/
 void stock_tree_init(void);//initialize stock list
 void show_stock(int);//show stock list
-void buy_stock(int, int);//buy stock
-void sell_stock(int, int);//sell stock
+void buy_stock(int, int, int);//buy stock
+void sell_stock(int, int, int);//sell stock
 void parse_cmd(char *, int*);//parse command line
 
 int main(int argc, char **argv)
@@ -153,11 +153,12 @@ void check_clients(pool *p)
 		//Rio_writen(connfd, buf, n); //line:conc:echoservers:endecho
 		if(strncmp(cmdline, "show", 4)==0)	show_stock(connfd);
 		else if(strncmp(cmdline, "buy", 3)==0){
-			parse_cmd(cmdline);
-			printf("id is %d\nquant is %d\n", parsed_ans[0], parsed_ans[1]);
+			parse_cmd(cmdline, parsed_ans);
+			buy_stock(parsed_ans[0], parsed_ans[1]);
 		}
 		else if(strncmp(cmdline, "sell", 3)==0){
-			parse_cmd(cmdline);
+			parse_cmd(cmdline, parsed_ans);
+			buy_stock(parsed_ans[0], parsed_ans[1]);
 		}
 		else if(strncmp(cmdline, "exit", 4)==0){ }
 		else	printf("WRONG REQUEST\n");
@@ -197,19 +198,37 @@ void show_stock(int connfd)
 	Rio_writen(connfd, cat_list, sizeof(cat_list));
 }
 
-void buy_stock(int id, int quant)
+void buy_stock(int id, int quant, int connfd)
 {
-
+	int i;
+	char buf[MAXLINE];
+	for(i=0; stock_tree[i].ID != id; i++){} // sotck_tree[i].ID == id
+	if(quant > stock_tree[i].left_stock){
+		strcpy(buf, "Not enough left stock\n");
+		Rio_writen(connfd, buf, sizeof(buf));
+	}
+	else{
+		stock_tree[i].left_stock -= quant;
+		strcpy(buf, "[buy] success\n");
+		Rio_writen(connfd, buf, sizeof(buf));
+	}
+	return;
 }
 
-void sell_stock(int id, int quant)
+void sell_stock(int id, int quant, int connfd)
 {
-
+	int i;
+	char buf[MAXLINE];
+	for(i=0; stock_tree[i].ID != id; i++){} // sotck_tree[i].ID == id
+	stock_tree[i].left_stock += quant;
+	strcpy(buf, "[sell] success\n");
+	Rio_writen(connfd, buf, sizeof(buf));
+	return;
 }
 
 void parse_cmd(char* cmd, int * parsed_ans)
 {
-	int parsed_id, parsed_quant, i, j, k;
+	int i, j, k;
 	int empty_space[3];
 	char string_id[10], string_quant[10];
 	for(i=0; cmd[i]!=' '; i++){ }
@@ -222,6 +241,6 @@ void parse_cmd(char* cmd, int * parsed_ans)
 	strncpy(string_quant, cmd + j + 1, k-j-1);
 	parsed_ans[0] = atoi(string_id);
 	parsed_ans[1] = atoi(string_quant);
-	return 0;
+	return;
 }
 
