@@ -154,11 +154,11 @@ void check_clients(pool *p)
 		if(strncmp(cmdline, "show", 4)==0)	show_stock(connfd);
 		else if(strncmp(cmdline, "buy", 3)==0){
 			parse_cmd(cmdline, parsed_ans);
-			buy_stock(parsed_ans[0], parsed_ans[1]);
+			buy_stock(parsed_ans[0], parsed_ans[1], connfd);
 		}
 		else if(strncmp(cmdline, "sell", 3)==0){
 			parse_cmd(cmdline, parsed_ans);
-			buy_stock(parsed_ans[0], parsed_ans[1]);
+			buy_stock(parsed_ans[0], parsed_ans[1], connfd);
 		}
 		else if(strncmp(cmdline, "exit", 4)==0){ }
 		else	printf("WRONG REQUEST\n");
@@ -229,15 +229,11 @@ void sell_stock(int id, int quant, int connfd)
 void parse_cmd(char* cmd, int * parsed_ans)
 {
 	int i, j, k;
-	int empty_space[3];
 	char string_id[10], string_quant[10];
 	for(i=0; cmd[i]!=' '; i++){ }
-	empty_space[0] = i;
 	for(j=i+1; cmd[j]!=' '; j++){ }
-	empty_space[1] = j;
 	strncpy(string_id, cmd + i + 1, j-i-1);
 	for(k=j+1; cmd[k]; k++){ }
-	empty_space[2] = k;
 	strncpy(string_quant, cmd + j + 1, k-j-1);
 	parsed_ans[0] = atoi(string_id);
 	parsed_ans[1] = atoi(string_quant);
