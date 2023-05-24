@@ -158,7 +158,7 @@ void check_clients(pool *p)
 		}
 		else if(strncmp(cmdline, "sell", 3)==0){
 			parse_cmd(cmdline, parsed_ans);
-			buy_stock(parsed_ans[0], parsed_ans[1], connfd);
+			sell_stock(parsed_ans[0], parsed_ans[1], connfd);
 		}
 		else if(strncmp(cmdline, "exit", 4)==0){ }
 		else	printf("WRONG REQUEST\n");
