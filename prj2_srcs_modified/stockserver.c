@@ -283,7 +283,7 @@ void insert_heap(void)
 	}//
 }
 
-void search_heap(int)
-{
+// void search_heap(int)
+// {
 
-}
+// }
