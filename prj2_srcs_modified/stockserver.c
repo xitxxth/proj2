@@ -20,6 +20,7 @@ typedef struct { /* Represents a pool of connected descriptors */ //line:conc:ec
 void init_pool(int listenfd, pool *p);
 void add_client(int connfd, pool *p);
 void check_clients(pool *p);
+void SIGINT_HANDLER(int s);
 /* $begin echoserversmain */
 
 int byte_cnt = 0; /* Counts total bytes received by server */
@@ -42,6 +43,7 @@ void parse_cmd(char *, int*);//parse command line
 
 int main(int argc, char **argv)
 {
+	Signal(SIGINT, SIGINT_HANDLER);
 	stock_tree_init();
 	fp = fopen("stock.txt", "r");
 	if(!fp){
@@ -85,9 +87,6 @@ int main(int argc, char **argv)
 	check_clients(&pool); //line:conc:echoservers:checkclients
     }
 
-	fp = fopen("stock.txt", "w");
-	for(int i=0; stock_tree[i].ID>0; i++)	fprintf(fp, "%d %d %d\n", stock_tree[i].ID, stock_tree[i].left_stock, stock_tree[i].price);
-	fclose(fp);
 }
 /* $end echoserversmain */
 
@@ -243,3 +242,11 @@ void parse_cmd(char* cmd, int * parsed_ans)
 	return;
 }
 
+void SIGINT_HANDLER(int s)
+{
+	int olderrno = errno;
+	fp = fopen("stock.txt", "w");
+	for(int i=0; stock_tree[i].ID>0; i++)	fprintf(fp, "%d %d %d\n", stock_tree[i].ID, stock_tree[i].left_stock, stock_tree[i].price);
+	fclose(fp);
+    errno = olderrno;
+}
