@@ -267,17 +267,17 @@ void insert_heap(void)
 	int i=0;
 	while(fscanf(fp, "%d %d %d", &tmp_id, &tmp_left, &tmp_price)!=EOF){
 		for(int j=1; j<128;){
-			if(tmp_id < stock_tree[j].ID){
-				j = j*2;
-			}
-			else if(tmp_id > stock_tree[j].ID){
-				j = j*2+1;
-			}
-			else if(stock_tree[j].ID == -1){
+			if(stock_tree[j].ID == -1){
 				stock_tree[j].ID = tmp_id;
 				stock_tree[j].left_stock = tmp_left;
 				stock_tree[j].price = tmp_price;
 				break;
+			}
+			else if(tmp_id < stock_tree[j].ID){
+				j = j*2;
+			}
+			else if(tmp_id > stock_tree[j].ID){
+				j = j*2+1;
 			}
 		}
 	}//
