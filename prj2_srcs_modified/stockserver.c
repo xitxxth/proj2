@@ -32,7 +32,8 @@ struct item{
 	int price; // price of stock
 	int readcnt; // ?
 	sem_t mutex; // mutex lock
-	struct item* left_child, right_child;
+	struct item* left_child;
+	struct item* right_child;
 }; //stock node by project2.pdf
 struct item* stock_tree; //manage heap as array
 /*user defined function*/
@@ -219,7 +220,6 @@ void show_stock(int connfd)
 
 void buy_stock(int id, int quant, int connfd)
 {
-	int i;
 	char buf[MAXLINE];
 	struct item* curr = search_tree(id);
 	if(quant > curr->left_stock){
@@ -236,7 +236,6 @@ void buy_stock(int id, int quant, int connfd)
 
 void sell_stock(int id, int quant, int connfd)
 {
-	int i;
 	char buf[MAXLINE];
 	struct item* curr = search_tree(id);
 	curr->left_stock += quant;
@@ -277,8 +276,9 @@ void insert_heap(int tmp_id, int tmp_left, int tmp_price)
 	new_stock->price = tmp_price;
 	new_stock->left_child = NULL;
 	new_stock->right_child = NULL;
-	struct item* curr, prev;
-	if(stock_tree=NULL){
+	struct item* curr;
+	struct item* prev;
+	if(stock_tree==NULL){
 		stock_tree = new_stock;
 		return;
 	}
