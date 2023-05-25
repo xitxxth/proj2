@@ -63,7 +63,10 @@ int main(int argc, char **argv)
 	// 	i++;//update index
 	// }//
 	int tmp_id, tmp_left, tmp_price;
-	while(fscanf(fp, "%d %d %d", &tmp_id, &tmp_left, &tmp_price)!=EOF)	{insert_heap(tmp_id, tmp_left, tmp_price);}
+	while(fscanf(fp, "%d %d %d", &tmp_id, &tmp_left, &tmp_price)!=EOF)	{
+		insert_heap(tmp_id, tmp_left, tmp_price);
+		printf("%d is inserted\n", tmp_id);
+		}
 	
 	fclose(fp);//close file pointer
     int listenfd, connfd;
@@ -272,7 +275,8 @@ void SIGINT_HANDLER(int s)
 		}
 		if(top>=0){
 			curr = stack[top--];
-			fprintf("%d %d %d\n", curr->ID, curr->left_stock curr->price);
+			printf("%d is printed\n", curr->ID);
+			fprintf(fp, "%d %d %d\n", curr->ID, curr->left_stock, curr->price);
 			curr = curr->right_child;
 		}
 		else{
