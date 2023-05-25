@@ -32,17 +32,17 @@ struct item{
 	int price; // price of stock
 	int readcnt; // ?
 	sem_t mutex; // mutex lock
+	struct item* left_child, right_child;
 }; //stock node by project2.pdf
-struct item stock_tree[MAX_STOCK]; //manage heap as array
+struct item* stock_tree; //manage heap as array
 /*user defined function*/
 void stock_tree_init(void);//initialize stock list
 void show_stock(int);//show stock list
 void buy_stock(int, int, int);//buy stock
 void sell_stock(int, int, int);//sell stock
 void parse_cmd(char *, int*);//parse command line
-void insert_heap(void);
-void search_heap(int);
-
+void insert_heap(int, int, int);
+struct item* search_tree(int);
 int main(int argc, char **argv)
 {
 	Signal(SIGINT, SIGINT_HANDLER);
@@ -61,10 +61,9 @@ int main(int argc, char **argv)
 	// 	//update stock list
 	// 	i++;//update index
 	// }//
-	insert_heap();
-	for(int i=0; stock_tree[i].ID>0; i++){
-		printf("[%d]: %d\n", i, stock_tree[i].ID);
-	}
+	int tmp_id, tmp_left, tmp_price;
+	while(fscanf(fp, "%d %d %d", &tmp_id, &tmp_left, &tmp_price)!=NULL)	insert_heap(tmp_id, tmp_left, tmp_price);
+	
 	fclose(fp);//close file pointer
     int listenfd, connfd;
     socklen_t clientlen;
@@ -190,22 +189,30 @@ void check_clients(pool *p)
 /*user defined functions*/
 void stock_tree_init(void)
 {
-	for(int i=0; i<MAX_STOCK; i++){
-		stock_tree[i].ID = -1;
-		stock_tree[i].left_stock = -1;
-		//stock_tree[i].mutex = -1;
-		stock_tree[i].price = -1;
-		stock_tree[i].readcnt = -1;
-	}
+	stock_tree = NULL;
 }
 
 void show_stock(int connfd)
 {
 	char cat_list[MAXLINE];
 	char tmp[MAX_CHARACTERS];
-	for(int i=0; stock_tree[i].ID>0; i++){
-		sprintf(tmp, "%d %d %d\n", stock_tree[i].ID, stock_tree[i].left_stock, stock_tree[i].price);
-		strcat(cat_list, tmp);
+	struct item* stack[MAX_STOCK];
+	struct item* curr = stock_tree;
+	int top=-1;
+	while(1) {
+		while(curr != NULL){
+			stack[++top] = curr;
+			curr = curr->left_child;
+		}
+		if(top>=0){
+			curr = stack[top--];
+			sprintf(tmp, "%d %d %d\n", curr->ID, curr->left_stock, curr->price);
+			strcat(cat_list, tmp);
+			curr = curr->right_child;
+		}
+		else{
+			break;
+		}
 	}
 	Rio_writen(connfd, cat_list, sizeof(cat_list));
 }
@@ -214,13 +221,13 @@ void buy_stock(int id, int quant, int connfd)
 {
 	int i;
 	char buf[MAXLINE];
-	for(i=0; stock_tree[i].ID != id; i++){} // sotck_tree[i].ID == id
-	if(quant > stock_tree[i].left_stock){
+	struct item* curr = search_tree(id);
+	if(quant > curr->left_stock){
 		strcpy(buf, "Not enough left stock\n");
 		Rio_writen(connfd, buf, sizeof(buf));
 	}
 	else{
-		stock_tree[i].left_stock -= quant;
+		curr->left_stock -= quant;
 		strcpy(buf, "[buy] success\n");
 		Rio_writen(connfd, buf, sizeof(buf));
 	}
@@ -231,8 +238,8 @@ void sell_stock(int id, int quant, int connfd)
 {
 	int i;
 	char buf[MAXLINE];
-	for(i=0; stock_tree[i].ID != id; i++){} // sotck_tree[i].ID == id
-	stock_tree[i].left_stock += quant;
+	struct item* curr = search_tree(id);
+	curr->left_stock += quant;
 	strcpy(buf, "[sell] success\n");
 	Rio_writen(connfd, buf, sizeof(buf));
 	return;
@@ -261,28 +268,50 @@ void SIGINT_HANDLER(int s)
     errno = olderrno;
 }
 
-void insert_heap(void)
+void insert_heap(int tmp_id, int tmp_left, int tmp_price)
 {
-	int tmp_id, tmp_price, tmp_left;// temporary variable for input
-	while(fscanf(fp, "%d %d %d", &tmp_id, &tmp_left, &tmp_price)!=EOF){
-		for(int j=1; j<128;){
-			if(stock_tree[j].ID == -1){
-				stock_tree[j].ID = tmp_id;
-				stock_tree[j].left_stock = tmp_left;
-				stock_tree[j].price = tmp_price;
-				break;
+	struct item* new_stock;
+	new_stock = (struct item*)malloc(sizeof(struct item));
+	new_stock->ID = tmp_id;
+	new_stock->left_stock = tmp_left;
+	new_stock->price = tmp_price;
+	new_stock->left_child = NULL;
+	new_stock->right_child = NULL;
+	struct item* curr, prev;
+	if(stock_tree=NULL){
+		stock_tree = new_stock;
+		return;
+	}
+	curr = stock_tree;
+	while(1){
+		prev = curr;
+			if(tmp_id < curr->ID){
+				curr=curr->left_child;
+				if(curr==NULL){
+					prev->left_child = curr;
+					return;
+				}
 			}
-			else if(tmp_id < stock_tree[j].ID){
-				j = j*2;
+			else(tmp_id > curr->ID){
+				curr=curr->right_child;
+				if(curr==NULL){
+					prev->right_child = curr;
+					return;
+				}
 			}
-			else if(tmp_id > stock_tree[j].ID){
-				j = j*2+1;
-			}
-		}
-	}//
+	}
 }
 
-// void search_heap(int)
-// {
-
-// }
+struct item* search_tree(int id) {
+    struct item* curr = stock_tree;
+    while (curr != NULL) {
+        if (id == curr->ID) {
+            return curr;
+        } else if (id < curr->ID) {
+            curr = curr->left_child;
+        } else {
+            curr = curr->right_child;
+        }
+    }
+    return;
+}
