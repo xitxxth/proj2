@@ -63,7 +63,7 @@ int main(int argc, char **argv)
 	// 	i++;//update index
 	// }//
 	int tmp_id, tmp_left, tmp_price;
-	while(fscanf(fp, "%d %d %d", &tmp_id, &tmp_left, &tmp_price)!=EOF)	insert_heap(tmp_id, tmp_left, tmp_price);
+	while(fscanf(fp, "%d %d %d", &tmp_id, &tmp_left, &tmp_price)!=EOF)	{insert_heap(tmp_id, tmp_left, tmp_price);}
 	
 	fclose(fp);//close file pointer
     int listenfd, connfd;
@@ -262,7 +262,28 @@ void SIGINT_HANDLER(int s)
 {
 	int olderrno = errno;
 	fp = fopen("stock.txt", "w");
-	for(int i=0; stock_tree[i].ID>0; i++)	fprintf(fp, "%d %d %d\n", stock_tree[i].ID, stock_tree[i].left_stock, stock_tree[i].price);
+	
+	char cat_list[MAXLINE];
+	char tmp[MAX_CHARACTERS];
+	struct item* stack[MAX_STOCK];
+	struct item* curr = stock_tree;
+	int top=-1;
+	while(1) {
+		while(curr != NULL){
+			stack[++top] = curr;
+			curr = curr->left_child;
+		}
+		if(top>=0){
+			curr = stack[top--];
+			sprintf(tmp, "%d %d %d\n", curr->ID, curr->left_stock, curr->price);
+			strcat(cat_list, tmp);
+			curr = curr->right_child;
+		}
+		else{
+			break;
+		}
+	}
+	fprintf(fp, "%s", cat_list);
 	fclose(fp);
     errno = olderrno;
 }
@@ -313,5 +334,5 @@ struct item* search_tree(int id) {
             curr = curr->right_child;
         }
     }
-    return;
+    return NULL;
 }
