@@ -198,25 +198,21 @@ void stock_tree_init(void)
 
 void show_stock(int connfd)
 {
+	if(stock_tree==NULL)	return;
 	char cat_list[MAXLINE];
 	char tmp[MAX_CHARACTERS];
 	struct item* stack[MAX_STOCK];
 	struct item* curr = stock_tree;
 	int top=-1;
-	while(1) {
+	while(curr!=NULL || top !=-1) {
 		while(curr != NULL){
 			stack[++top] = curr;
 			curr = curr->left_child;
 		}
-		if(top>=0){
-			curr = stack[top--];
-			sprintf(tmp, "%d %d %d\n", curr->ID, curr->left_stock, curr->price);
-			strcat(cat_list, tmp);
-			curr = curr->right_child;
-		}
-		else{
-			break;
-		}
+		curr = stack[top--];
+		sprintf(tmp, "%d %d %d\n", curr->ID, curr->left_stock, curr->price);
+		strcat(cat_list, tmp);
+		curr = curr->right_child;
 	}
 	Rio_writen(connfd, cat_list, sizeof(cat_list));
 }
