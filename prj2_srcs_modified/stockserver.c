@@ -63,7 +63,7 @@ int main(int argc, char **argv)
 	// 	i++;//update index
 	// }//
 	int tmp_id, tmp_left, tmp_price;
-	while(fscanf(fp, "%d %d %d", &tmp_id, &tmp_left, &tmp_price)!=NULL)	insert_heap(tmp_id, tmp_left, tmp_price);
+	while(fscanf(fp, "%d %d %d", &tmp_id, &tmp_left, &tmp_price)!=EOF)	insert_heap(tmp_id, tmp_left, tmp_price);
 	
 	fclose(fp);//close file pointer
     int listenfd, connfd;
@@ -292,7 +292,7 @@ void insert_heap(int tmp_id, int tmp_left, int tmp_price)
 					return;
 				}
 			}
-			else(tmp_id > curr->ID){
+			else{
 				curr=curr->right_child;
 				if(curr==NULL){
 					prev->right_child = curr;
