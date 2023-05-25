@@ -262,9 +262,6 @@ void SIGINT_HANDLER(int s)
 {
 	int olderrno = errno;
 	fp = fopen("stock.txt", "w");
-	
-	char cat_list[MAXLINE];
-	char tmp[MAX_CHARACTERS];
 	struct item* stack[MAX_STOCK];
 	struct item* curr = stock_tree;
 	int top=-1;
@@ -275,15 +272,13 @@ void SIGINT_HANDLER(int s)
 		}
 		if(top>=0){
 			curr = stack[top--];
-			sprintf(tmp, "%d %d %d\n", curr->ID, curr->left_stock, curr->price);
-			strcat(cat_list, tmp);
+			fprintf("%d %d %d\n", curr->ID, curr->left_stock curr->price);
 			curr = curr->right_child;
 		}
 		else{
 			break;
 		}
 	}
-	fprintf(fp, "%s", cat_list);
 	fclose(fp);
     errno = olderrno;
 }
