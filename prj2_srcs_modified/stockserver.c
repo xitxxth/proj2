@@ -203,6 +203,7 @@ void show_stock(int connfd)
 	struct item* stack[MAX_STOCK];
 	struct item* curr = stock_tree;
 	int top=-1;
+	printf("before: %s\n", cat_list);
 	while(curr!=NULL || top !=-1) {
 		while(curr != NULL){
 			stack[++top] = curr;
@@ -213,6 +214,7 @@ void show_stock(int connfd)
 		strcat(cat_list, tmp_str);
 		curr = curr->right_child;
 	}
+	printf("after: %s\n", cat_list);
 	Rio_writen(connfd, cat_list, MAXLINE);
 }
 
