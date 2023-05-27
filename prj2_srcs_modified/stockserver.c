@@ -43,7 +43,7 @@ void buy_stock(int, int, int);//buy stock
 void sell_stock(int, int, int);//sell stock
 void parse_cmd(char *, int*);//parse command line
 void insert_heap(int, int, int);
-struct item* search_tree(int);
+struct item* search_tree(int); 
 int main(int argc, char **argv)
 {
 	Signal(SIGINT, SIGINT_HANDLER);
@@ -180,7 +180,7 @@ void check_clients(pool *p)
 	    }
 	    /* EOF detected, remove descriptor from pool */
 	    else {
-		printf("client dead\n");
+		//printf("client dead\n");
 		Close(connfd); //line:conc:echoservers:closeconnfd
 		FD_CLR(connfd, &p->read_set); //line:conc:echoservers:beginremove
 		p->clientfd[i] = -1;          //line:conc:echoservers:endremove
@@ -199,11 +199,12 @@ void show_stock(int connfd)
 {
 	if(stock_tree==NULL)	return;
 	char cat_list[MAXLINE];
+	for(int i=0; cat_list[i]; i++)	cat_list[i] = '\0';
 	char tmp_str[MAX_CHARACTERS];
 	struct item* stack[MAX_STOCK];
 	struct item* curr = stock_tree;
 	int top=-1;
-	printf("before: %s\n", cat_list);
+	//printf("before: %s\n", cat_list);
 	while(curr!=NULL || top !=-1) {
 		while(curr != NULL){
 			stack[++top] = curr;
@@ -214,7 +215,7 @@ void show_stock(int connfd)
 		strcat(cat_list, tmp_str);
 		curr = curr->right_child;
 	}
-	printf("after: %s\n", cat_list);
+	//printf("after: %s\n", cat_list);
 	Rio_writen(connfd, cat_list, MAXLINE);
 }
 
