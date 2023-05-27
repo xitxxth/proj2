@@ -216,7 +216,7 @@ void show_stock(int connfd)
 		curr = curr->right_child;
 	}
 	//printf("after: %s\n", cat_list);
-	Rio_writen(connfd, cat_list, MAXLINE);
+	Rio_writen(connfd, cat_list, strlen(cat_list));
 }
 
 void buy_stock(int id, int quant, int connfd)
@@ -225,16 +225,17 @@ void buy_stock(int id, int quant, int connfd)
 	struct item* curr;
 	if(!(curr  = search_tree(id))){
 		strcpy(buf, "Wrong ID\n");
-		Rio_writen(connfd, buf, MAXLINE);
+		Rio_writen(connfd, buf,strlen(buf));
+		return;
 	}
 	if(quant > curr->left_stock){
 		strcpy(buf, "Not enough left stock\n");
-		Rio_writen(connfd, buf, MAXLINE);
+		Rio_writen(connfd, buf, strlen(buf));
 	}
 	else{
 		curr->left_stock -= quant;
 		strcpy(buf, "[buy] success\n");
-		Rio_writen(connfd, buf, MAXLINE);
+		Rio_writen(connfd, buf, strlen(buf));
 	}
 	return;
 }
@@ -245,11 +246,12 @@ void sell_stock(int id, int quant, int connfd)
 	struct item* curr;
 	if(!(curr  = search_tree(id))){
 		strcpy(buf, "Wrong ID\n");
-		Rio_writen(connfd, buf, MAXLINE);
+		Rio_writen(connfd, buf, strlen(buf));
+		return;
 	}
 	curr->left_stock += quant;
 	strcpy(buf, "[sell] success\n");
-	Rio_writen(connfd, buf, MAXLINE);
+	Rio_writen(connfd, buf, strlen(buf));
 	return;
 }
 
