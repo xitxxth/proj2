@@ -59,7 +59,6 @@ struct timespec begin, end;
 
 int main(int argc, char **argv) 
 {
-	clock_gettime(CLOCK_MONOTONIC, &begin);
     int i, listenfd, connfd;
     socklen_t clientlen;
     struct sockaddr_storage clientaddr;
@@ -97,10 +96,14 @@ int main(int argc, char **argv)
     sbuf_init(&sbuf, SBUFSIZE); //line:conc:pre:initsbuf
     for (i = 0; i < NTHREADS; i++)  /* Create worker threads */ //line:conc:pre:begincreate
 	    Pthread_create(&tid, NULL, thread, NULL);               //line:conc:pre:endcreate
-
+	int j=1;
     while (1) { 
     clientlen = sizeof(struct sockaddr_storage);
 	connfd = Accept(listenfd, (SA *) &clientaddr, &clientlen);
+	if(j){
+		clock_gettime(CLOCK_MONOTONIC, &begin);
+		j--;
+	}
 	sbuf_insert(&sbuf, connfd); /* Insert connfd in buffer */
     }
 }
@@ -120,7 +123,7 @@ void *thread(void *vargp)
 /* 
  * A thread-safe version of echo that counts the total number
  * of bytes received from clients.
- */`
+ */
 /* $begin echo_cnt */
 static void init_echo_cnt(void)
 {
