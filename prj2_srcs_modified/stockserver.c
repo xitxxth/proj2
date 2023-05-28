@@ -3,6 +3,7 @@
  */
 /* $begin echoservertpremain */
 #include "csapp.h"
+#include <time.h>
 #define NTHREADS  4
 #define SBUFSIZE  16
 #define MAX_STOCK 129
@@ -54,13 +55,15 @@ void parse_cmd(char *, int*);//parse command line
 void insert_heap(int, int, int);
 void SIGINT_HANDLER(int s);
 struct item* search_tree(int); 
+struct timespec begin, end;
 
 int main(int argc, char **argv) 
 {
+	clock_gettime(CLOCK_MONOTONIC, &begin);
     int i, listenfd, connfd;
     socklen_t clientlen;
     struct sockaddr_storage clientaddr;
-    pthread_t tid; 
+    pthread_t tid;
 
     if (argc != 2) {
 	fprintf(stderr, "usage: %s <port>\n", argv[0]);
@@ -109,13 +112,15 @@ void *thread(void *vargp)
 	int connfd = sbuf_remove(&sbuf); /* Remove connfd from buffer */ //line:conc:pre:removeconnfd
 	echo_cnt(connfd);                /* Service client */
 	Close(connfd);
+	clock_gettime(CLOCK_MONOTONIC, &end);
+	printf("time: %lf\n", (end.tv_sec - begin.tv_sec) + (end.tv_nsec - begin.tv_nsec) / 1000000000.0 );
     }
 }
 /* $end echoservertpremain */
 /* 
  * A thread-safe version of echo that counts the total number
  * of bytes received from clients.
- */
+ */`
 /* $begin echo_cnt */
 static void init_echo_cnt(void)
 {
@@ -146,7 +151,6 @@ void echo_cnt(int connfd)
 			sell_stock(parsed_ans[0], parsed_ans[1], connfd);
 		}
         else    break;
-		Close(connfd);
 	}
 	    /* EOF detected, remove descriptor from pool */
 	// P(&mutex);
