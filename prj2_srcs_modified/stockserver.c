@@ -96,7 +96,6 @@ int main(int argc, char **argv)
 	    Pthread_create(&tid, NULL, thread, NULL);               //line:conc:pre:endcreate
 
     while (1) { 
-	printf("WAITING!\n");
     clientlen = sizeof(struct sockaddr_storage);
 	connfd = Accept(listenfd, (SA *) &clientaddr, &clientlen);
 	sbuf_insert(&sbuf, connfd); /* Insert connfd in buffer */
@@ -107,7 +106,6 @@ void *thread(void *vargp)
 {  
     Pthread_detach(pthread_self()); 
     while (1) { 
-	printf("THREAD ON!\n");
 	int connfd = sbuf_remove(&sbuf); /* Remove connfd from buffer */ //line:conc:pre:removeconnfd
 	echo_cnt(connfd);                /* Service client */
 	Close(connfd);
@@ -147,11 +145,8 @@ void echo_cnt(int connfd)
 			parse_cmd(cmdline, parsed_ans);
 			sell_stock(parsed_ans[0], parsed_ans[1], connfd);
 		}
-		else if(strncmp(cmdline, "exit", 4)==0){
-			printf("client dead\n");
-			Close(connfd); //line:conc:echoservers:closeconnfd
-		}
         else    break;
+		Close(connfd);
 	}
 	    /* EOF detected, remove descriptor from pool */
 	// P(&mutex);
@@ -275,6 +270,7 @@ void SIGINT_HANDLER(int s)
 	}
 	fclose(fp);
     errno = olderrno;
+	exit(0);
 }
 
 void insert_heap(int tmp_id, int tmp_left, int tmp_price)
