@@ -5,6 +5,7 @@
 #include "csapp.h"
 /*user defined macro*/
 #include <stdlib.h>
+#include <time.h>
 #define MAX_STOCK 129
 #define MAX_CHARACTERS 100
 typedef struct { /* Represents a pool of connected descriptors */ //line:conc:echoservers:beginpool
@@ -44,6 +45,8 @@ void sell_stock(int, int, int);//sell stock
 void parse_cmd(char *, int*);//parse command line
 void insert_heap(int, int, int);
 struct item* search_tree(int); 
+struct timespec begin, end;
+
 int main(int argc, char **argv)
 {
 	Signal(SIGINT, SIGINT_HANDLER);
@@ -84,10 +87,15 @@ int main(int argc, char **argv)
 	pool.ready_set = pool.read_set;
 	pool.nready = Select(pool.maxfd+1, &pool.ready_set, NULL, NULL, NULL);
 
+	int j=1;
 	/* If listening descriptor ready, add new client to pool */
 	if (FD_ISSET(listenfd, &pool.ready_set)) { //line:conc:echoservers:listenfdready
         clientlen = sizeof(struct sockaddr_storage);
 	    connfd = Accept(listenfd, (SA *)&clientaddr, &clientlen); //line:conc:echoservers:accept
+		if(j){
+			clock_gettime(CLOCK_MONOTONIC, &begin);
+			j--;
+	}
 	    add_client(connfd, &pool); //line:conc:echoservers:addclient
 	}
 	
@@ -171,16 +179,12 @@ void check_clients(pool *p)
 			parse_cmd(cmdline, parsed_ans);
 			sell_stock(parsed_ans[0], parsed_ans[1], connfd);
 		}
-		else if(strncmp(cmdline, "exit", 4)==0){
-			printf("client dead\n");
-			Close(connfd); //line:conc:echoservers:closeconnfd
-			FD_CLR(connfd, &p->read_set); //line:conc:echoservers:beginremove
-			p->clientfd[i] = -1;          //line:conc:echoservers:endremove
-		}
 	    }
 	    /* EOF detected, remove descriptor from pool */
 	    else {
 		//printf("client dead\n");
+		clock_gettime(CLOCK_MONOTONIC, &end);
+		printf("time: %lf\n", (end.tv_sec - begin.tv_sec) + (end.tv_nsec - begin.tv_nsec) / 1000000000.0 );
 		Close(connfd); //line:conc:echoservers:closeconnfd
 		FD_CLR(connfd, &p->read_set); //line:conc:echoservers:beginremove
 		p->clientfd[i] = -1;          //line:conc:echoservers:endremove
