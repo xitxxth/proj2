@@ -314,10 +314,8 @@ void insert_heap(int tmp_id, int tmp_left, int tmp_price)
 
 struct item* search_tree(int id) {
     struct item* curr = stock_tree;
-	P(&mutex);
     while (curr != NULL) {
         if (id == curr->ID) {
-			V(&mutex);
             return curr;
         } else if (id < curr->ID) {
             curr = curr->left_child;
@@ -325,7 +323,6 @@ struct item* search_tree(int id) {
             curr = curr->right_child;
         }
     }
-	V(&mutex);
     return NULL;
 }
 
