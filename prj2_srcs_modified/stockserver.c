@@ -96,6 +96,7 @@ int main(int argc, char **argv)
 	    Pthread_create(&tid, NULL, thread, NULL);               //line:conc:pre:endcreate
 
     while (1) { 
+	printf("WAITING!\n");
     clientlen = sizeof(struct sockaddr_storage);
 	connfd = Accept(listenfd, (SA *) &clientaddr, &clientlen);
 	sbuf_insert(&sbuf, connfd); /* Insert connfd in buffer */
@@ -106,6 +107,7 @@ void *thread(void *vargp)
 {  
     Pthread_detach(pthread_self()); 
     while (1) { 
+	printf("THREAD ON!\n");
 	int connfd = sbuf_remove(&sbuf); /* Remove connfd from buffer */ //line:conc:pre:removeconnfd
 	echo_cnt(connfd);                /* Service client */
 	Close(connfd);
@@ -315,8 +317,8 @@ struct item* search_tree(int id) {
 	P(&mutex);
     while (curr != NULL) {
         if (id == curr->ID) {
-            return curr;
 			V(&mutex);
+            return curr;
         } else if (id < curr->ID) {
             curr = curr->left_child;
         } else {
