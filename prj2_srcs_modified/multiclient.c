@@ -1,7 +1,7 @@
 #include "csapp.h"
 #include <time.h>
 
-#define MAX_CLIENT 100
+#define MAX_CLIENT 1019
 #define ORDER_PER_CLIENT 10
 #define STOCK_NUM 10
 #define BUY_SELL_MAX 10
@@ -76,7 +76,7 @@ int main(int argc, char **argv)
 				Rio_readnb(&rio, buf, MAXLINE);
 				Fputs(buf, stdout);
 
-				usleep(1000000);
+				//usleep(1000000);
 			}
 
 			Close(clientfd);
