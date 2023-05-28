@@ -1,46 +1,37 @@
 /* 
- * echoservert_pre.c - A prethreaded concurrent echo server
+ * echoservers.c - A concurrent echo server based on select
  */
-/* $begin echoservertpremain */
+/* $begin echoserversmain */
 #include "csapp.h"
-#define NTHREADS  4
-#define SBUFSIZE  16
+/*user defined macro*/
+#include <stdlib.h>
 #define MAX_STOCK 129
 #define MAX_CHARACTERS 100
-#ifndef __SBUF_H__
-#define __SBUF_H__
+typedef struct { /* Represents a pool of connected descriptors */ //line:conc:echoservers:beginpool
+    int maxfd;        /* Largest descriptor in read_set */   
+    fd_set read_set;  /* Set of all active descriptors */
+    fd_set ready_set; /* Subset of descriptors ready for reading  */
+    int nready;       /* Number of ready descriptors from select */   
+    int maxi;         /* Highwater index into client array */
+    int clientfd[FD_SETSIZE];    /* Set of active descriptors */
+    rio_t clientrio[FD_SETSIZE]; /* Set of active read buffers */
+} pool; //line:conc:echoservers:endpool
+/* $end echoserversmain */
+void init_pool(int listenfd, pool *p);
+void add_client(int connfd, pool *p);
+void check_clients(pool *p);
+void SIGINT_HANDLER(int s);
+/* $begin echoserversmain */
 
-typedef struct {
-    int *buf;          /* Buffer array */         
-    int n;             /* Maximum number of slots */
-    int front;         /* buf[(front+1)%n] is first item */
-    int rear;          /* buf[rear%n] is last item */
-    sem_t mutex;       /* Protects accesses to buf */
-    sem_t slots;       /* Counts available slots */
-    sem_t items;       /* Counts available items */
-} sbuf_t;
-/* $end sbuft */
-
-void sbuf_init(sbuf_t *sp, int n);
-void sbuf_deinit(sbuf_t *sp);
-void sbuf_insert(sbuf_t *sp, int item);
-int sbuf_remove(sbuf_t *sp);
-
-#endif /* __SBUF_H__ */
-
-void echo_cnt(int connfd);
-void *thread(void *vargp);
-
-sbuf_t sbuf; /* Shared buffer of connected descriptors */
-static int byte_cnt;  /* Byte counter */
-static sem_t mutex;   /* and the mutex that protects it */
-
+int byte_cnt = 0; /* Counts total bytes received by server */
+/* user defined data structure*/
 FILE* fp; //FILE OPEN POINTER
 struct item{
 	int ID; // stock ID
 	int left_stock;// the number of left stocks
 	int price; // price of stock
 	int readcnt; // ?
+	sem_t mutex; // mutex lock
 	struct item* left_child;
 	struct item* right_child;
 }; //stock node by project2.pdf
@@ -52,22 +43,9 @@ void buy_stock(int, int, int);//buy stock
 void sell_stock(int, int, int);//sell stock
 void parse_cmd(char *, int*);//parse command line
 void insert_heap(int, int, int);
-void SIGINT_HANDLER(int s);
 struct item* search_tree(int); 
-
-int main(int argc, char **argv) 
+int main(int argc, char **argv)
 {
-    int i, listenfd, connfd;
-    socklen_t clientlen;
-    struct sockaddr_storage clientaddr;
-    pthread_t tid; 
-
-    if (argc != 2) {
-	fprintf(stderr, "usage: %s <port>\n", argv[0]);
-	exit(0);
-    }
-    listenfd = Open_listenfd(argv[1]);
-
 	Signal(SIGINT, SIGINT_HANDLER);
 	stock_tree_init();
 	fp = fopen("stock.txt", "r");
@@ -90,53 +68,101 @@ int main(int argc, char **argv)
 		}
 	
 	fclose(fp);//close file pointer
-
-    sbuf_init(&sbuf, SBUFSIZE); //line:conc:pre:initsbuf
-    for (i = 0; i < NTHREADS; i++)  /* Create worker threads */ //line:conc:pre:begincreate
-	    Pthread_create(&tid, NULL, thread, NULL);               //line:conc:pre:endcreate
-
-    while (1) { 
-    clientlen = sizeof(struct sockaddr_storage);
-	connfd = Accept(listenfd, (SA *) &clientaddr, &clientlen);
-	sbuf_insert(&sbuf, connfd); /* Insert connfd in buffer */
+    int listenfd, connfd;
+    socklen_t clientlen;
+    struct sockaddr_storage clientaddr;
+    static pool pool;
+    if (argc != 2) {
+	fprintf(stderr, "usage: %s <port>\n", argv[0]);
+	exit(0);
     }
-}
+    listenfd = Open_listenfd(argv[1]);
+    init_pool(listenfd, &pool); //line:conc:echoservers:initpool
 
-void *thread(void *vargp) 
-{  
-    Pthread_detach(pthread_self()); 
-    while (1) { 
-	int connfd = sbuf_remove(&sbuf); /* Remove connfd from buffer */ //line:conc:pre:removeconnfd
-	echo_cnt(connfd);                /* Service client */
-	Close(connfd);
+    while (1) {
+	/* Wait for listening/connected descriptor(s) to become ready */
+	pool.ready_set = pool.read_set;
+	pool.nready = Select(pool.maxfd+1, &pool.ready_set, NULL, NULL, NULL);
+
+	/* If listening descriptor ready, add new client to pool */
+	if (FD_ISSET(listenfd, &pool.ready_set)) { //line:conc:echoservers:listenfdready
+        clientlen = sizeof(struct sockaddr_storage);
+	    connfd = Accept(listenfd, (SA *)&clientaddr, &clientlen); //line:conc:echoservers:accept
+	    add_client(connfd, &pool); //line:conc:echoservers:addclient
+	}
+	
+	/* Echo a text line from each ready connected descriptor */ 
+	check_clients(&pool); //line:conc:echoservers:checkclients
     }
-}
-/* $end echoservertpremain */
-/* 
- * A thread-safe version of echo that counts the total number
- * of bytes received from clients.
- */
-/* $begin echo_cnt */
-static void init_echo_cnt(void)
-{
-    Sem_init(&mutex, 0, 1);
-    byte_cnt = 0;
-}
 
-void echo_cnt(int connfd) 
+}
+/* $end echoserversmain */
+
+/* $begin init_pool */
+void init_pool(int listenfd, pool *p) 
 {
-    int n; 
+    /* Initially, there are no connected descriptors */
+    int i;
+    p->maxi = -1;                   //line:conc:echoservers:beginempty
+    for (i=0; i< FD_SETSIZE; i++)  
+	p->clientfd[i] = -1;        //line:conc:echoservers:endempty
+
+    /* Initially, listenfd is only member of select read set */
+    p->maxfd = listenfd;            //line:conc:echoservers:begininit
+    FD_ZERO(&p->read_set);
+    FD_SET(listenfd, &p->read_set); //line:conc:echoservers:endinit
+}
+/* $end init_pool */
+
+/* $begin add_client */
+void add_client(int connfd, pool *p) 
+{
+    int i;
+    p->nready--;
+    for (i = 0; i < FD_SETSIZE; i++)  /* Find an available slot */
+	if (p->clientfd[i] < 0) { 
+	    /* Add connected descriptor to the pool */
+	    p->clientfd[i] = connfd;                 //line:conc:echoservers:beginaddclient
+	    Rio_readinitb(&p->clientrio[i], connfd); //line:conc:echoservers:endaddclient
+
+	    /* Add the descriptor to descriptor set */
+	    FD_SET(connfd, &p->read_set); //line:conc:echoservers:addconnfd
+
+	    /* Update max descriptor and pool highwater mark */
+	    if (connfd > p->maxfd) //line:conc:echoservers:beginmaxfd
+		p->maxfd = connfd; //line:conc:echoservers:endmaxfd
+	    if (i > p->maxi)       //line:conc:echoservers:beginmaxi
+		p->maxi = i;       //line:conc:echoservers:endmaxi
+	    break;
+	}
+    if (i == FD_SETSIZE) /* Couldn't find an empty slot */
+	app_error("add_client error: Too many clients");
+}
+/* $end add_client */
+
+/* $begin check_clients */
+void check_clients(pool *p) 
+{
+    int i, connfd, n;
     char buf[MAXLINE]; 
-    char cmdline[MAXLINE];
+	char cmdline[MAXLINE];
     rio_t rio;
-    static pthread_once_t once = PTHREAD_ONCE_INIT;
-    int parsed_ans[2];
+	/*user defined data structure*/
+	int parsed_ans[2];
 
-    Pthread_once(&once, init_echo_cnt); //line:conc:pre:pthreadonce
-    Rio_readinitb(&rio, connfd);        //line:conc:pre:rioinitb
-    while((n = Rio_readlineb(&rio, buf, MAXLINE)) != 0) {
-        strcpy(cmdline, buf);
-        if(strncmp(cmdline, "show", 4)==0)	show_stock(connfd);
+    for (i = 0; (i <= p->maxi) && (p->nready > 0); i++) {
+	connfd = p->clientfd[i];
+	rio = p->clientrio[i];
+
+	/* If the descriptor is ready, echo a text line from it */
+	if ((connfd > 0) && (FD_ISSET(connfd, &p->ready_set))) { 
+	    p->nready--;
+	    if ((n = Rio_readlineb(&rio, buf, MAXLINE)) != 0) {
+		byte_cnt += n; //line:conc:echoservers:beginecho
+		printf("Server received %d (%d total) bytes on fd %d\n", n, byte_cnt, connfd);
+		strcpy(cmdline, buf);
+		//Rio_writen(connfd, buf, n); //line:conc:echoservers:endecho
+		if(strncmp(cmdline, "show", 4)==0)	show_stock(connfd);
 		else if(strncmp(cmdline, "buy", 3)==0){
 			parse_cmd(cmdline, parsed_ans);
 			buy_stock(parsed_ans[0], parsed_ans[1], connfd);
@@ -148,19 +174,21 @@ void echo_cnt(int connfd)
 		else if(strncmp(cmdline, "exit", 4)==0){
 			printf("client dead\n");
 			Close(connfd); //line:conc:echoservers:closeconnfd
+			FD_CLR(connfd, &p->read_set); //line:conc:echoservers:beginremove
+			p->clientfd[i] = -1;          //line:conc:echoservers:endremove
 		}
-        else    break;
-	}
+	    }
 	    /* EOF detected, remove descriptor from pool */
-	// P(&mutex);
-	// byte_cnt += n; //line:conc:pre:cntaccess1
-	// printf("server received %d (%d total) bytes on fd %d\n", 
-	//        n, byte_cnt, connfd); //line:conc:pre:cntaccess2
-	// V(&mutex);
-	// Rio_writen(connfd, buf, n);
-    return;
+	    else {
+		//printf("client dead\n");
+		Close(connfd); //line:conc:echoservers:closeconnfd
+		FD_CLR(connfd, &p->read_set); //line:conc:echoservers:beginremove
+		p->clientfd[i] = -1;          //line:conc:echoservers:endremove
+	    }
+	}
+    }
 }
-/* $end echo_cnt */
+/* $end check_clients */
 /*user defined functions*/
 void stock_tree_init(void)
 {
@@ -177,7 +205,6 @@ void show_stock(int connfd)
 	struct item* curr = stock_tree;
 	int top=-1;
 	//printf("before: %s\n", cat_list);
-	P(&mutex);
 	while(curr!=NULL || top !=-1) {
 		while(curr != NULL){
 			stack[++top] = curr;
@@ -188,7 +215,6 @@ void show_stock(int connfd)
 		strcat(cat_list, tmp_str);
 		curr = curr->right_child;
 	}
-	V(&mutex);
 	//printf("after: %s\n", cat_list);
 	Rio_writen(connfd, cat_list, sizeof(cat_list));
 }
@@ -197,21 +223,17 @@ void buy_stock(int id, int quant, int connfd)
 {
 	char buf[MAXLINE];
 	struct item* curr;
-	P(&mutex);
 	if(!(curr  = search_tree(id))){
-		V(&mutex);
 		strcpy(buf, "Wrong ID\n");
 		Rio_writen(connfd, buf, sizeof(buf));
 		return;
 	}
 	if(quant > curr->left_stock){
-		V(&mutex);
 		strcpy(buf, "Not enough left stock\n");
 		Rio_writen(connfd, buf, sizeof(buf));
 	}
 	else{
 		curr->left_stock -= quant;
-		V(&mutex);
 		strcpy(buf, "[buy] success\n");
 		Rio_writen(connfd, buf, sizeof(buf));
 	}
@@ -222,15 +244,12 @@ void sell_stock(int id, int quant, int connfd)
 {
 	char buf[MAXLINE];
 	struct item* curr;
-	P(&mutex);
 	if(!(curr  = search_tree(id))){
-		V(&mutex);
 		strcpy(buf, "Wrong ID\n");
 		Rio_writen(connfd, buf, sizeof(buf));
 		return;
 	}
 	curr->left_stock += quant;
-	V(&mutex);
 	strcpy(buf, "[sell] success\n");
 	Rio_writen(connfd, buf, sizeof(buf));
 	return;
@@ -312,17 +331,14 @@ void insert_heap(int tmp_id, int tmp_left, int tmp_price)
 
 struct item* search_tree(int id) {
     struct item* curr = stock_tree;
-	P(&mutex);
     while (curr != NULL) {
         if (id == curr->ID) {
             return curr;
-			V(&mutex);
         } else if (id < curr->ID) {
             curr = curr->left_child;
         } else {
             curr = curr->right_child;
         }
     }
-	V(&mutex);
     return NULL;
 }
