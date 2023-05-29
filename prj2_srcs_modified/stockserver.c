@@ -3,11 +3,10 @@
  */
 /* $begin echoservertpremain */
 #include "csapp.h"
-#include <time.h>
-#define NTHREADS  4
-#define SBUFSIZE  16
-#define MAX_STOCK 129
-#define MAX_CHARACTERS 100
+#define NTHREADS  4//THE NUMBER OF THREADS
+#define SBUFSIZE  16//SBUF SIZE
+#define MAX_STOCK 129//THE NUMBER OF STOCKS
+#define MAX_CHARACTERS 100//array size
 #ifndef __SBUF_H__
 #define __SBUF_H__
 
@@ -25,12 +24,12 @@ typedef struct {
 void sbuf_init(sbuf_t *sp, int n);
 void sbuf_deinit(sbuf_t *sp);
 void sbuf_insert(sbuf_t *sp, int item);
-int sbuf_remove(sbuf_t *sp);
+int sbuf_remove(sbuf_t *sp);//PRE-DEFINED(CSAPP)
 
 #endif /* __SBUF_H__ */
 
 void echo_cnt(int connfd);
-void *thread(void *vargp);
+void *thread(void *vargp);//PRE-DEFINED(CSAPP)
 
 sbuf_t sbuf; /* Shared buffer of connected descriptors */
 static int byte_cnt;  /* Byte counter */
@@ -43,7 +42,7 @@ struct item{
 	int price; // price of stock
 	int readcnt; // ?
 	struct item* left_child;
-	struct item* right_child;
+	struct item* right_child;//LINK TO CHILD NODES
 }; //stock node by project2.pdf
 struct item* stock_tree; //manage heap as array
 /*user defined function*/
@@ -55,7 +54,6 @@ void parse_cmd(char *, int*);//parse command line
 void insert_heap(int, int, int);
 void SIGINT_HANDLER(int s);
 struct item* search_tree(int); 
-struct timespec begin, end;
 
 int main(int argc, char **argv) 
 {
@@ -75,20 +73,11 @@ int main(int argc, char **argv)
 	fp = fopen("stock.txt", "r");
 	if(!fp){
 		printf("FILE OPEN ERROR\n");
-		exit(0);
+		exit(0);//OPEN STOCK.TXT
 	}
-	// int tmp_id, tmp_price, tmp_left;// temporary variable for input
-	// int i=0;
-	// while(fscanf(fp, "%d %d %d", &tmp_id, &tmp_left, &tmp_price)!=EOF){
-	// 	stock_tree[i].ID = tmp_id;
-	// 	stock_tree[i].left_stock = tmp_left;
-	// 	stock_tree[i].price = tmp_price;
-	// 	//update stock list
-	// 	i++;//update index
-	// }//
 	int tmp_id, tmp_left, tmp_price;
 	while(fscanf(fp, "%d %d %d", &tmp_id, &tmp_left, &tmp_price)!=EOF)	{
-		insert_heap(tmp_id, tmp_left, tmp_price);
+		insert_heap(tmp_id, tmp_left, tmp_price);//INSERT DATA
 		}
 	
 	fclose(fp);//close file pointer
@@ -96,27 +85,20 @@ int main(int argc, char **argv)
     sbuf_init(&sbuf, SBUFSIZE); //line:conc:pre:initsbuf
     for (i = 0; i < NTHREADS; i++)  /* Create worker threads */ //line:conc:pre:begincreate
 	    Pthread_create(&tid, NULL, thread, NULL);               //line:conc:pre:endcreate
-	int j=1;
     while (1) { 
     clientlen = sizeof(struct sockaddr_storage);
 	connfd = Accept(listenfd, (SA *) &clientaddr, &clientlen);
-	if(j){
-		clock_gettime(CLOCK_MONOTONIC, &begin);
-		j--;
-	}
 	sbuf_insert(&sbuf, connfd); /* Insert connfd in buffer */
     }
 }
 
 void *thread(void *vargp) 
 {  
-    Pthread_detach(pthread_self()); 
+    Pthread_detach(pthread_self()); //DETACH THREAD FROM MAIN
     while (1) { 
 	int connfd = sbuf_remove(&sbuf); /* Remove connfd from buffer */ //line:conc:pre:removeconnfd
 	echo_cnt(connfd);                /* Service client */
 	Close(connfd);
-	clock_gettime(CLOCK_MONOTONIC, &end);
-	printf("time: %lf\n", (end.tv_sec - begin.tv_sec) + (end.tv_nsec - begin.tv_nsec) / 1000000000.0 );
     }
 }
 /* $end echoservertpremain */
@@ -127,7 +109,7 @@ void *thread(void *vargp)
 /* $begin echo_cnt */
 static void init_echo_cnt(void)
 {
-    Sem_init(&mutex, 0, 1);
+    Sem_init(&mutex, 0, 1);//MUTEX = 1
     byte_cnt = 0;
 }
 
@@ -138,20 +120,20 @@ void echo_cnt(int connfd)
     char cmdline[MAXLINE];
     rio_t rio;
     static pthread_once_t once = PTHREAD_ONCE_INIT;
-    int parsed_ans[2];
+    int parsed_ans[2];//PARSED RESULT OF STR %D %D
 
     Pthread_once(&once, init_echo_cnt); //line:conc:pre:pthreadonce
     Rio_readinitb(&rio, connfd);        //line:conc:pre:rioinitb
     while((n = Rio_readlineb(&rio, buf, MAXLINE)) != 0) {
-        strcpy(cmdline, buf);
-        if(strncmp(cmdline, "show", 4)==0)	show_stock(connfd);
-		else if(strncmp(cmdline, "buy", 3)==0){
-			parse_cmd(cmdline, parsed_ans);
-			buy_stock(parsed_ans[0], parsed_ans[1], connfd);
+        strcpy(cmdline, buf);//COPY TO CMDLINE
+        if(strncmp(cmdline, "show", 4)==0)	show_stock(connfd);//SHOW
+		else if(strncmp(cmdline, "buy", 3)==0){//BUY %D %D
+			parse_cmd(cmdline, parsed_ans);//PARSE %D %D
+			buy_stock(parsed_ans[0], parsed_ans[1], connfd);//BUY
 		}
-		else if(strncmp(cmdline, "sell", 3)==0){
-			parse_cmd(cmdline, parsed_ans);
-			sell_stock(parsed_ans[0], parsed_ans[1], connfd);
+		else if(strncmp(cmdline, "sell", 3)==0){//SELL
+			parse_cmd(cmdline, parsed_ans);//SELL %D %D
+			sell_stock(parsed_ans[0], parsed_ans[1], connfd);//SELL
 		}
         else    break;
 	}
@@ -168,54 +150,54 @@ void echo_cnt(int connfd)
 /*user defined functions*/
 void stock_tree_init(void)
 {
-	stock_tree = NULL;
+	stock_tree = NULL;//POINT NULL
 }
 
 void show_stock(int connfd)
 {
-	if(stock_tree==NULL)	return;
-	char cat_list[MAXLINE];
-	for(int i=0; cat_list[i]; i++)	cat_list[i] = '\0';
-	char tmp_str[MAX_CHARACTERS];
-	struct item* stack[MAX_STOCK];
-	struct item* curr = stock_tree;
-	int top=-1;
+	if(stock_tree==NULL)	return;//EMPTY TREE
+	char cat_list[MAXLINE];//FINAL RESULT
+	for(int i=0; cat_list[i]; i++)	cat_list[i] = '\0';//KILL STATIC DATA
+	char tmp_str[MAX_CHARACTERS];//TEMPORARY STRING
+	struct item* stack[MAX_STOCK];//STACK FOR TRAVERSE TREE
+	struct item* curr = stock_tree;//PTR
+	int top=-1;//STACK TOP
 	//printf("before: %s\n", cat_list);
-	P(&mutex);
+	P(&mutex);//LOCK
 	while(curr!=NULL || top !=-1) {
 		while(curr != NULL){
 			stack[++top] = curr;
 			curr = curr->left_child;
 		}
-		curr = stack[top--];
-		sprintf(tmp_str, "%d %d %d\n", curr->ID, curr->left_stock, curr->price);
-		strcat(cat_list, tmp_str);
-		curr = curr->right_child;
+		curr = stack[top--];//TRAVERSE
+		sprintf(tmp_str, "%d %d %d\n", curr->ID, curr->left_stock, curr->price);//PUT IN STRING
+		strcat(cat_list, tmp_str);//CONCATENATE STRINGS
+		curr = curr->right_child;//TRAVERSE
 	}
-	V(&mutex);
+	V(&mutex);//UNLOCK
 	//printf("after: %s\n", cat_list);
-	Rio_writen(connfd, cat_list, sizeof(cat_list));
+	Rio_writen(connfd, cat_list, sizeof(cat_list));//SEND RESULT
 }
 
 void buy_stock(int id, int quant, int connfd)
 {
-	char buf[MAXLINE];
+	char buf[MAXLINE];//STRING LINE
 	struct item* curr;
-	P(&mutex);
-	if(!(curr  = search_tree(id))){
-		V(&mutex);
+	P(&mutex);//LOCK
+	if(!(curr  = search_tree(id))){//UNFOUND
+		V(&mutex);//UNLOCK
 		strcpy(buf, "Wrong ID\n");
 		Rio_writen(connfd, buf, sizeof(buf));
 		return;
 	}
-	if(quant > curr->left_stock){
-		V(&mutex);
+	if(quant > curr->left_stock){//NOT ENOUGH STOCKS
+		V(&mutex);//UNLOCK
 		strcpy(buf, "Not enough left stock\n");
 		Rio_writen(connfd, buf, sizeof(buf));
 	}
 	else{
-		curr->left_stock -= quant;
-		V(&mutex);
+		curr->left_stock -= quant;//SUCCESS!
+		V(&mutex);//UNLOCK
 		strcpy(buf, "[buy] success\n");
 		Rio_writen(connfd, buf, sizeof(buf));
 	}
@@ -226,15 +208,15 @@ void sell_stock(int id, int quant, int connfd)
 {
 	char buf[MAXLINE];
 	struct item* curr;
-	P(&mutex);
-	if(!(curr  = search_tree(id))){
-		V(&mutex);
+	P(&mutex);//LOCK
+	if(!(curr  = search_tree(id))){//UNFOUND
+		V(&mutex);//UNLOCK
 		strcpy(buf, "Wrong ID\n");
 		Rio_writen(connfd, buf, sizeof(buf));
 		return;
 	}
-	curr->left_stock += quant;
-	V(&mutex);
+	curr->left_stock += quant;//SUCCESS!
+	V(&mutex);//UNLOCK
 	strcpy(buf, "[sell] success\n");
 	Rio_writen(connfd, buf, sizeof(buf));
 	return;
@@ -246,30 +228,30 @@ void parse_cmd(char* cmd, int * parsed_ans)
 	char string_id[10], string_quant[10];
 	for(i=0; cmd[i]!=' '; i++){ }
 	for(j=i+1; cmd[j]!=' '; j++){ }
-	strncpy(string_id, cmd + i + 1, j-i-1);
+	strncpy(string_id, cmd + i + 1, j-i-1);//"%D" %D
 	for(k=j+1; cmd[k]; k++){ }
-	strncpy(string_quant, cmd + j + 1, k-j-1);
-	parsed_ans[0] = atoi(string_id);
-	parsed_ans[1] = atoi(string_quant);
+	strncpy(string_quant, cmd + j + 1, k-j-1);// %D "%D"
+	parsed_ans[0] = atoi(string_id);//CHANGE INTO INTEGER "%D" %D
+	parsed_ans[1] = atoi(string_quant);//CHANGE INTO INTEGER %D "%D"
 	return;
 }
 
 void SIGINT_HANDLER(int s)
 {
 	int olderrno = errno;
-	fp = fopen("stock.txt", "w");
-	struct item* stack[MAX_STOCK];
-	struct item* curr = stock_tree;
-	int top=-1;
+	fp = fopen("stock.txt", "w");//OPEN FOR WRITE
+	struct item* stack[MAX_STOCK];//TRAVERSE STACK
+	struct item* curr = stock_tree;//PTR
+	int top=-1;//STACK TOP
 	while(1) {
 		while(curr != NULL){
 			stack[++top] = curr;
-			curr = curr->left_child;
+			curr = curr->left_child;//TRAVERSE
 		}
 		if(top>=0){
-			curr = stack[top--];
-			fprintf(fp, "%d %d %d\n", curr->ID, curr->left_stock, curr->price);
-			curr = curr->right_child;
+			curr = stack[top--];//TRAVERSE
+			fprintf(fp, "%d %d %d\n", curr->ID, curr->left_stock, curr->price);//SAVE IT
+			curr = curr->right_child;//TRAVERSE
 		}
 		else{
 			break;
@@ -277,23 +259,23 @@ void SIGINT_HANDLER(int s)
 	}
 	fclose(fp);
     errno = olderrno;
-	exit(0);
+	exit(0);//END
 }
 
 void insert_heap(int tmp_id, int tmp_left, int tmp_price)
 {
-	struct item* new_stock;
+	struct item* new_stock;//NEW STOCK NODE
 	new_stock = (struct item*)malloc(sizeof(struct item));
 	new_stock->ID = tmp_id;
 	new_stock->left_stock = tmp_left;
 	new_stock->price = tmp_price;
 	new_stock->left_child = NULL;
-	new_stock->right_child = NULL;
+	new_stock->right_child = NULL;//SET
 	struct item* curr;
 	struct item* prev;
 	if(stock_tree==NULL){
 		stock_tree = new_stock;
-		return;
+		return;//EMTPY? SAVE IT
 	}
 	curr = stock_tree;
 	while(1){
@@ -312,12 +294,12 @@ void insert_heap(int tmp_id, int tmp_left, int tmp_price)
 					return;
 				}
 			}
-	}
+	}//TRAVERSING AND FIND EMPTY PLACE FOR NEW NODE
 }
 
 struct item* search_tree(int id) {
     struct item* curr = stock_tree;
-    while (curr != NULL) {
+    while (curr != NULL) {//FINDING NODE HAS ID "id"
         if (id == curr->ID) {
             return curr;
         } else if (id < curr->ID) {

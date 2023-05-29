@@ -5,7 +5,6 @@
 #include "csapp.h"
 /*user defined macro*/
 #include <stdlib.h>
-#include <time.h>
 #define MAX_STOCK 129
 #define MAX_CHARACTERS 100
 typedef struct { /* Represents a pool of connected descriptors */ //line:conc:echoservers:beginpool
@@ -45,30 +44,21 @@ void sell_stock(int, int, int);//sell stock
 void parse_cmd(char *, int*);//parse command line
 void insert_heap(int, int, int);
 struct item* search_tree(int); 
-struct timespec begin, end;
 
 int main(int argc, char **argv)
 {
-	Signal(SIGINT, SIGINT_HANDLER);
+		Signal(SIGINT, SIGINT_HANDLER);
 	stock_tree_init();
 	fp = fopen("stock.txt", "r");
 	if(!fp){
 		printf("FILE OPEN ERROR\n");
-		exit(0);
+		exit(0);//OPEN STOCK.TXT
 	}
-	// int tmp_id, tmp_price, tmp_left;// temporary variable for input
-	// int i=0;
-	// while(fscanf(fp, "%d %d %d", &tmp_id, &tmp_left, &tmp_price)!=EOF){
-	// 	stock_tree[i].ID = tmp_id;
-	// 	stock_tree[i].left_stock = tmp_left;
-	// 	stock_tree[i].price = tmp_price;
-	// 	//update stock list
-	// 	i++;//update index
-	// }//
 	int tmp_id, tmp_left, tmp_price;
 	while(fscanf(fp, "%d %d %d", &tmp_id, &tmp_left, &tmp_price)!=EOF)	{
-		insert_heap(tmp_id, tmp_left, tmp_price);
-		}
+		insert_heap(tmp_id, tmp_left, tmp_price);//INSERT DATA
+	}
+	
 	
 	fclose(fp);//close file pointer
     int listenfd, connfd;
@@ -92,10 +82,6 @@ int main(int argc, char **argv)
 	if (FD_ISSET(listenfd, &pool.ready_set)) { //line:conc:echoservers:listenfdready
         clientlen = sizeof(struct sockaddr_storage);
 	    connfd = Accept(listenfd, (SA *)&clientaddr, &clientlen); //line:conc:echoservers:accept
-		if(j){
-			clock_gettime(CLOCK_MONOTONIC, &begin);
-			j--;
-	}
 	    add_client(connfd, &pool); //line:conc:echoservers:addclient
 	}
 	
@@ -168,23 +154,21 @@ void check_clients(pool *p)
 	    if ((n = Rio_readlineb(&rio, buf, MAXLINE)) != 0) {
 		byte_cnt += n; //line:conc:echoservers:beginecho
 		printf("Server received %d (%d total) bytes on fd %d\n", n, byte_cnt, connfd);
-		strcpy(cmdline, buf);
+		strcpy(cmdline, buf);//COPY BUF TO CMDLINE
 		//Rio_writen(connfd, buf, n); //line:conc:echoservers:endecho
-		if(strncmp(cmdline, "show", 4)==0)	show_stock(connfd);
-		else if(strncmp(cmdline, "buy", 3)==0){
-			parse_cmd(cmdline, parsed_ans);
-			buy_stock(parsed_ans[0], parsed_ans[1], connfd);
+	    if(strncmp(cmdline, "show", 4)==0)	show_stock(connfd);//SHOW
+		else if(strncmp(cmdline, "buy", 3)==0){//BUY %D %D
+			parse_cmd(cmdline, parsed_ans);//PARSE %D %D
+			buy_stock(parsed_ans[0], parsed_ans[1], connfd);//BUY
 		}
-		else if(strncmp(cmdline, "sell", 3)==0){
-			parse_cmd(cmdline, parsed_ans);
-			sell_stock(parsed_ans[0], parsed_ans[1], connfd);
+		else if(strncmp(cmdline, "sell", 3)==0){//SELL
+			parse_cmd(cmdline, parsed_ans);//SELL %D %D
+			sell_stock(parsed_ans[0], parsed_ans[1], connfd);//SELL
 		}
 	    }
 	    /* EOF detected, remove descriptor from pool */
 	    else {
 		//printf("client dead\n");
-		clock_gettime(CLOCK_MONOTONIC, &end);
-		printf("time: %lf\n", (end.tv_sec - begin.tv_sec) + (end.tv_nsec - begin.tv_nsec) / 1000000000.0 );
 		Close(connfd); //line:conc:echoservers:closeconnfd
 		FD_CLR(connfd, &p->read_set); //line:conc:echoservers:beginremove
 		p->clientfd[i] = -1;          //line:conc:echoservers:endremove
@@ -196,48 +180,48 @@ void check_clients(pool *p)
 /*user defined functions*/
 void stock_tree_init(void)
 {
-	stock_tree = NULL;
+	stock_tree = NULL;//POINT NULL
 }
 
 void show_stock(int connfd)
 {
-	if(stock_tree==NULL)	return;
-	char cat_list[MAXLINE];
-	for(int i=0; cat_list[i]; i++)	cat_list[i] = '\0';
-	char tmp_str[MAX_CHARACTERS];
-	struct item* stack[MAX_STOCK];
-	struct item* curr = stock_tree;
-	int top=-1;
+	if(stock_tree==NULL)	return;//EMPTY TREE
+	char cat_list[MAXLINE];//FINAL RESULT
+	for(int i=0; cat_list[i]; i++)	cat_list[i] = '\0';//KILL STATIC DATA
+	char tmp_str[MAX_CHARACTERS];//TEMPORARY STRING
+	struct item* stack[MAX_STOCK];//STACK FOR TRAVERSE TREE
+	struct item* curr = stock_tree;//PTR
+	int top=-1;//STACK TOP
 	//printf("before: %s\n", cat_list);
 	while(curr!=NULL || top !=-1) {
 		while(curr != NULL){
 			stack[++top] = curr;
 			curr = curr->left_child;
 		}
-		curr = stack[top--];
-		sprintf(tmp_str, "%d %d %d\n", curr->ID, curr->left_stock, curr->price);
-		strcat(cat_list, tmp_str);
-		curr = curr->right_child;
+		curr = stack[top--];//TRAVERSE
+		sprintf(tmp_str, "%d %d %d\n", curr->ID, curr->left_stock, curr->price);//PUT IN STRING
+		strcat(cat_list, tmp_str);//CONCATENATE STRINGS
+		curr = curr->right_child;//TRAVERSE
 	}
 	//printf("after: %s\n", cat_list);
-	Rio_writen(connfd, cat_list, sizeof(cat_list));
+	Rio_writen(connfd, cat_list, sizeof(cat_list));//SEND RESULT
 }
 
 void buy_stock(int id, int quant, int connfd)
 {
-	char buf[MAXLINE];
+	char buf[MAXLINE];//STRING LINE
 	struct item* curr;
-	if(!(curr  = search_tree(id))){
+	if(!(curr  = search_tree(id))){//UNFOUND
 		strcpy(buf, "Wrong ID\n");
 		Rio_writen(connfd, buf, sizeof(buf));
 		return;
 	}
-	if(quant > curr->left_stock){
+	if(quant > curr->left_stock){//NOT ENOUGH STOCKS
 		strcpy(buf, "Not enough left stock\n");
 		Rio_writen(connfd, buf, sizeof(buf));
 	}
 	else{
-		curr->left_stock -= quant;
+		curr->left_stock -= quant;//SUCCESS!
 		strcpy(buf, "[buy] success\n");
 		Rio_writen(connfd, buf, sizeof(buf));
 	}
@@ -248,12 +232,12 @@ void sell_stock(int id, int quant, int connfd)
 {
 	char buf[MAXLINE];
 	struct item* curr;
-	if(!(curr  = search_tree(id))){
+	if(!(curr  = search_tree(id))){//UNFOUND
 		strcpy(buf, "Wrong ID\n");
 		Rio_writen(connfd, buf, sizeof(buf));
 		return;
 	}
-	curr->left_stock += quant;
+	curr->left_stock += quant;//SUCCESS!
 	strcpy(buf, "[sell] success\n");
 	Rio_writen(connfd, buf, sizeof(buf));
 	return;
@@ -265,30 +249,30 @@ void parse_cmd(char* cmd, int * parsed_ans)
 	char string_id[10], string_quant[10];
 	for(i=0; cmd[i]!=' '; i++){ }
 	for(j=i+1; cmd[j]!=' '; j++){ }
-	strncpy(string_id, cmd + i + 1, j-i-1);
+	strncpy(string_id, cmd + i + 1, j-i-1);//"%D" %D
 	for(k=j+1; cmd[k]; k++){ }
-	strncpy(string_quant, cmd + j + 1, k-j-1);
-	parsed_ans[0] = atoi(string_id);
-	parsed_ans[1] = atoi(string_quant);
+	strncpy(string_quant, cmd + j + 1, k-j-1);// %D "%D"
+	parsed_ans[0] = atoi(string_id);//CHANGE INTO INTEGER "%D" %D
+	parsed_ans[1] = atoi(string_quant);//CHANGE INTO INTEGER %D "%D"
 	return;
 }
 
 void SIGINT_HANDLER(int s)
 {
 	int olderrno = errno;
-	fp = fopen("stock.txt", "w");
-	struct item* stack[MAX_STOCK];
-	struct item* curr = stock_tree;
-	int top=-1;
+	fp = fopen("stock.txt", "w");//OPEN FOR WRITE
+	struct item* stack[MAX_STOCK];//TRAVERSE STACK
+	struct item* curr = stock_tree;//PTR
+	int top=-1;//STACK TOP
 	while(1) {
 		while(curr != NULL){
 			stack[++top] = curr;
-			curr = curr->left_child;
+			curr = curr->left_child;//TRAVERSE
 		}
 		if(top>=0){
-			curr = stack[top--];
-			fprintf(fp, "%d %d %d\n", curr->ID, curr->left_stock, curr->price);
-			curr = curr->right_child;
+			curr = stack[top--];//TRAVERSE
+			fprintf(fp, "%d %d %d\n", curr->ID, curr->left_stock, curr->price);//SAVE IT
+			curr = curr->right_child;//TRAVERSE
 		}
 		else{
 			break;
@@ -296,22 +280,23 @@ void SIGINT_HANDLER(int s)
 	}
 	fclose(fp);
     errno = olderrno;
+	exit(0);//END
 }
 
 void insert_heap(int tmp_id, int tmp_left, int tmp_price)
 {
-	struct item* new_stock;
+	struct item* new_stock;//NEW STOCK NODE
 	new_stock = (struct item*)malloc(sizeof(struct item));
 	new_stock->ID = tmp_id;
 	new_stock->left_stock = tmp_left;
 	new_stock->price = tmp_price;
 	new_stock->left_child = NULL;
-	new_stock->right_child = NULL;
+	new_stock->right_child = NULL;//SET
 	struct item* curr;
 	struct item* prev;
 	if(stock_tree==NULL){
 		stock_tree = new_stock;
-		return;
+		return;//EMTPY? SAVE IT
 	}
 	curr = stock_tree;
 	while(1){
@@ -330,12 +315,12 @@ void insert_heap(int tmp_id, int tmp_left, int tmp_price)
 					return;
 				}
 			}
-	}
+	}//TRAVERSING AND FIND EMPTY PLACE FOR NEW NODE
 }
 
 struct item* search_tree(int id) {
     struct item* curr = stock_tree;
-    while (curr != NULL) {
+    while (curr != NULL) {//FINDING NODE HAS ID "id"
         if (id == curr->ID) {
             return curr;
         } else if (id < curr->ID) {
