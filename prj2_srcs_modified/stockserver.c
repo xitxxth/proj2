@@ -125,6 +125,10 @@ void echo_cnt(int connfd)
     Pthread_once(&once, init_echo_cnt); //line:conc:pre:pthreadonce
     Rio_readinitb(&rio, connfd);        //line:conc:pre:rioinitb
     while((n = Rio_readlineb(&rio, buf, MAXLINE)) != 0) {
+		P(&mutex);
+		byte_cnt += n; //line:conc:pre:cntaccess1
+		printf("server received %d (%d total) bytes on fd %d\n", n, byte_cnt, connfd); //line:conc:pre:cntaccess2
+		V(&mutex);
         strcpy(cmdline, buf);//COPY TO CMDLINE
         if(strncmp(cmdline, "show", 4)==0)	show_stock(connfd);//SHOW
 		else if(strncmp(cmdline, "buy", 3)==0){//BUY %D %D
